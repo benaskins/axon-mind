@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ichiban/prolog"
-	"github.com/ichiban/prolog/engine"
 )
 
 // Engine wraps a Prolog interpreter for logical reasoning.
@@ -170,13 +169,6 @@ func scanBindings(sols *prolog.Solutions, goal string) (map[string]any, error) {
 	m := make(map[string]any)
 	if err := sols.Scan(m); err != nil {
 		return nil, fmt.Errorf("mind: scan: %w", err)
-	}
-
-	// Convert engine.Atom values to strings
-	for k, v := range m {
-		if atom, ok := v.(engine.Atom); ok {
-			m[k] = atom.String()
-		}
 	}
 
 	return m, nil
