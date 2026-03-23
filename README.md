@@ -10,6 +10,8 @@ Embedded Prolog engine for structured inference over facts and rules. axon-mind 
 go get github.com/benaskins/axon-mind@latest
 ```
 
+Requires Go 1.26+.
+
 ```go
 package main
 
