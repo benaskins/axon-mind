@@ -1,3 +1,8 @@
+---
+module: github.com/benaskins/axon-mind
+kind: library
+---
+
 # axon-mind
 
 Domain-agnostic logical reasoning library embedding Prolog (ichiban/prolog) in Go.
