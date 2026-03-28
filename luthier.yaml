@@ -1,0 +1,10 @@
+name: axon-mind
+purpose: Embedded Prolog engine for structured inference
+use_when: Logic/rules engine
+deterministic: true
+snippet:
+  imports:
+    - path: github.com/benaskins/axon-mind
+      alias: mind
+  requires:
+    - github.com/benaskins/axon-mind
