@@ -81,6 +81,71 @@ func TestRegisterFileExists(t *testing.T) {
 	}
 }
 
+func TestRegisterArity4BoolPredicate(t *testing.T) {
+	e := NewEngine()
+
+	// Register a 4-arity predicate: all_different(A, B, C, D)
+	err := e.Register("all_different", 4, func(a, b, c, d string) bool {
+		return a != b && a != c && a != d && b != c && b != d && c != d
+	})
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	result, ok, err := e.QueryOne(`all_different(a, b, c, d).`)
+	if err != nil {
+		t.Fatalf("QueryOne failed: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected success for all different atoms")
+	}
+	_ = result
+
+	_, ok, err = e.QueryOne(`all_different(a, b, a, d).`)
+	if err != nil {
+		t.Fatalf("QueryOne failed: %v", err)
+	}
+	if ok {
+		t.Fatal("expected failure for duplicate atoms")
+	}
+}
+
+func TestRegisterArity5StringPredicate(t *testing.T) {
+	e := NewEngine()
+
+	// Register a 5-arity predicate: concat4(A, B, C, D, Result)
+	// Go function takes 4 string inputs, returns string (arity = 4 inputs + 1 output = 5)
+	err := e.Register("concat4", 5, func(a, b, c, d string) string {
+		return a + b + c + d
+	})
+	if err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	result, ok, err := e.QueryOne(`concat4(h, e, l, p, X).`)
+	if err != nil {
+		t.Fatalf("QueryOne failed: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected a solution")
+	}
+	if result.Bindings["X"] != "help" {
+		t.Errorf("expected X=help, got X=%v", result.Bindings["X"])
+	}
+}
+
+func TestRegisterUnsupportedArity(t *testing.T) {
+	e := NewEngine()
+
+	err := e.Register("too_many", 9, func(a string) bool { return true })
+	if err == nil {
+		t.Fatal("expected error for arity 9")
+	}
+	if err.Error() != "mind: Register too_many: arity 9 not supported (max 8)" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestRegisterStringPredicate(t *testing.T) {
 	e := NewEngine()
 

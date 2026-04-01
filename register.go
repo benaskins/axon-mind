@@ -14,6 +14,7 @@ import (
 //   - func(args ...string) string        → unifies result with the last argument
 //   - func(args ...string) (string, bool) → returns result + success flag
 //
+// Arity 1-8 is supported, matching the ichiban/prolog Predicate types.
 // The arity parameter must match: for bool-returning functions, arity == number
 // of Go parameters. For string-returning functions, arity == parameters + 1
 // (the extra argument is the output variable).
@@ -29,50 +30,105 @@ func (e *Engine) Register(name string, arity int, fn any) error {
 
 	switch arity {
 	case 1:
-		e.interp.Register1(atom, makeHandler(fnVal, fnType, arity))
+		e.interp.Register1(atom, makeHandler1(fnVal, fnType))
 	case 2:
-		e.interp.Register2(atom, makeHandler2(fnVal, fnType, arity))
+		e.interp.Register2(atom, makeHandler2(fnVal, fnType))
 	case 3:
-		e.interp.Register3(atom, makeHandler3(fnVal, fnType, arity))
+		e.interp.Register3(atom, makeHandler3(fnVal, fnType))
+	case 4:
+		e.interp.Register4(atom, makeHandler4(fnVal, fnType))
+	case 5:
+		e.interp.Register5(atom, makeHandler5(fnVal, fnType))
+	case 6:
+		e.interp.Register6(atom, makeHandler6(fnVal, fnType))
+	case 7:
+		e.interp.Register7(atom, makeHandler7(fnVal, fnType))
+	case 8:
+		e.interp.Register8(atom, makeHandler8(fnVal, fnType))
 	default:
-		return fmt.Errorf("mind: Register %s: arity %d not supported (max 3)", name, arity)
+		return fmt.Errorf("mind: Register %s: arity %d not supported (max 8)", name, arity)
 	}
 
 	return nil
 }
 
-// makeHandler creates a Predicate1 from a Go function.
-func makeHandler(fnVal reflect.Value, fnType reflect.Type, arity int) engine.Predicate1 {
-	return func(vm *engine.VM, arg1 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
-		args := []engine.Term{arg1}
-		return callGo(vm, fnVal, fnType, args, nil, k, env)
+// hasStringOutput returns true if the function returns a string as its first output,
+// meaning the last Prolog argument is the output variable.
+func hasStringOutput(fnType reflect.Type) bool {
+	return fnType.NumOut() > 0 && fnType.Out(0).Kind() == reflect.String
+}
+
+// splitArgs separates Prolog terms into Go input args and an optional output variable.
+// When the Go function returns a string, the last Prolog argument is the output.
+func splitArgs(all []engine.Term, hasOutput bool) (inputs []engine.Term, output *engine.Term) {
+	if hasOutput {
+		last := all[len(all)-1]
+		return all[:len(all)-1], &last
+	}
+	return all, nil
+}
+
+func makeHandler1(fnVal reflect.Value, fnType reflect.Type) engine.Predicate1 {
+	return func(vm *engine.VM, a1 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
 	}
 }
 
-// makeHandler2 creates a Predicate2 from a Go function.
-func makeHandler2(fnVal reflect.Value, fnType reflect.Type, arity int) engine.Predicate2 {
-	hasOutput := fnType.NumOut() > 0 && fnType.Out(0).Kind() == reflect.String
-	return func(vm *engine.VM, arg1, arg2 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
-		if hasOutput {
-			// Last arg is output, only pass first to Go function
-			args := []engine.Term{arg1}
-			return callGo(vm, fnVal, fnType, args, &arg2, k, env)
-		}
-		args := []engine.Term{arg1, arg2}
-		return callGo(vm, fnVal, fnType, args, nil, k, env)
+func makeHandler2(fnVal reflect.Value, fnType reflect.Type) engine.Predicate2 {
+	return func(vm *engine.VM, a1, a2 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
 	}
 }
 
-// makeHandler3 creates a Predicate3 from a Go function.
-func makeHandler3(fnVal reflect.Value, fnType reflect.Type, arity int) engine.Predicate3 {
-	hasOutput := fnType.NumOut() > 0 && fnType.Out(0).Kind() == reflect.String
-	return func(vm *engine.VM, arg1, arg2, arg3 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
-		if hasOutput {
-			args := []engine.Term{arg1, arg2}
-			return callGo(vm, fnVal, fnType, args, &arg3, k, env)
-		}
-		args := []engine.Term{arg1, arg2, arg3}
-		return callGo(vm, fnVal, fnType, args, nil, k, env)
+func makeHandler3(fnVal reflect.Value, fnType reflect.Type) engine.Predicate3 {
+	return func(vm *engine.VM, a1, a2, a3 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
+	}
+}
+
+func makeHandler4(fnVal reflect.Value, fnType reflect.Type) engine.Predicate4 {
+	return func(vm *engine.VM, a1, a2, a3, a4 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3, a4}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
+	}
+}
+
+func makeHandler5(fnVal reflect.Value, fnType reflect.Type) engine.Predicate5 {
+	return func(vm *engine.VM, a1, a2, a3, a4, a5 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3, a4, a5}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
+	}
+}
+
+func makeHandler6(fnVal reflect.Value, fnType reflect.Type) engine.Predicate6 {
+	return func(vm *engine.VM, a1, a2, a3, a4, a5, a6 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3, a4, a5, a6}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
+	}
+}
+
+func makeHandler7(fnVal reflect.Value, fnType reflect.Type) engine.Predicate7 {
+	return func(vm *engine.VM, a1, a2, a3, a4, a5, a6, a7 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3, a4, a5, a6, a7}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
+	}
+}
+
+func makeHandler8(fnVal reflect.Value, fnType reflect.Type) engine.Predicate8 {
+	return func(vm *engine.VM, a1, a2, a3, a4, a5, a6, a7, a8 engine.Term, k engine.Cont, env *engine.Env) *engine.Promise {
+		args := []engine.Term{a1, a2, a3, a4, a5, a6, a7, a8}
+		inputs, output := splitArgs(args, hasStringOutput(fnType))
+		return callGo(vm, fnVal, fnType, inputs, output, k, env)
 	}
 }
 
